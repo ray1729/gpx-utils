@@ -1,0 +1,16 @@
+github.com/d4l3k/messagediff v1.2.1/go.mod h1:Oozbb1TVXFac9FtSIxHBMnBCq2qeH/2KkEQxENCrlLo=
+github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dhconnelly/rtreego v1.0.0 h1:1+V1STGw+zwx7jpvH/fwbeC5w5gZfn+XinARU45oRek=
+github.com/dhconnelly/rtreego v1.0.0/go.mod h1:SDozu0Fjy17XH1svEXJgdYq8Tah6Zjfa/4Q33Z80+KM=
+github.com/fofanov/go-osgb v0.0.0-20170711141822-6893d1f95cd9 h1:thlfI7kPFFxkrzB6HUgSgAkfj3YuY5PBXETFl1EAs10=
+github.com/fofanov/go-osgb v0.0.0-20170711141822-6893d1f95cd9/go.mod h1:eEWh/C5XNJx6u/8Bi+hN16JEJk0P4g494xKPdHrooZk=
+github.com/twpayne/go-geom v1.0.0 h1:ARrRnN4+rBX3LZFZQy9NFeXXlgQqVL4OOvAcnLdgy2g=
+github.com/twpayne/go-geom v1.0.0/go.mod h1:RWsl+e3XSahOul/KH2BHCfF0QxSL4RMnMlFw/TNmET0=
+github.com/twpayne/go-gpx v1.1.1 h1:vbg0lRc/ZKSu8ev84/hJWZtplKJdBbucNmks4TNzSqQ=
+github.com/twpayne/go-gpx v1.1.1/go.mod h1:fQ+EsiFNgDuErUYyI0ZOgZPB+ACxW58L16oormty798=
+github.com/twpayne/go-kml v1.0.0/go.mod h1:LlvLIQSfMqYk2O7Nx8vYAbSLv4K9rjMvLlEdUKWdjq0=
+github.com/twpayne/go-polyline v1.0.0/go.mod h1:ICh24bcLYBX8CknfvNPKqoTbe+eg+MX1NPyJmSBo7pU=
+golang.org/x/net v0.0.0-20180824152047-4bcd98cce591 h1:4S2XUgvg3hUNTvxI307qkFPb9zKHG3Nf9TXFzX/DZZI=
+golang.org/x/net v0.0.0-20180824152047-4bcd98cce591/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
+golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
+golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
