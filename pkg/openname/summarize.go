@@ -78,6 +78,7 @@ func (gs *GPXSummarizer) SummarizeTrack(filename string) (*TrackSummary, error) 
 	}
 
 	var prevPlace string
+	var prevPlacePoint rtreego.Point
 	var prevPoint rtreego.Point
 	var prevHeight float64
 
@@ -96,6 +97,7 @@ func (gs *GPXSummarizer) SummarizeTrack(filename string) (*TrackSummary, error) 
 				if init {
 					s.Start = nn.Name
 					prevPlace = nn.Name
+					prevPlacePoint = thisPoint
 					prevPoint = thisPoint
 					prevHeight = thisHeight
 					s.PointsOfInterest = append(s.PointsOfInterest, POI{nn.Name, 0.0})
@@ -106,9 +108,10 @@ func (gs *GPXSummarizer) SummarizeTrack(filename string) (*TrackSummary, error) 
 				if ascent := thisHeight - prevHeight; ascent > 0 {
 					s.Ascent += ascent
 				}
-				if insideLoc(thisPoint, nn) && nn.Name != prevPlace {
+				if insideLoc(thisPoint, nn) && nn.Name != prevPlace && distance(thisPoint, prevPlacePoint) > 0.2 {
 					s.PointsOfInterest = append(s.PointsOfInterest, POI{nn.Name, s.Distance})
 					prevPlace = nn.Name
+					prevPlacePoint = thisPoint
 				}
 				prevPoint = thisPoint
 				prevHeight = thisHeight

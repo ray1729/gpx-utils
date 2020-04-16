@@ -2,7 +2,7 @@ package openname
 
 import (
 	"archive/zip"
-	"log"
+	"fmt"
 	"strings"
 
 	"github.com/dhconnelly/rtreego"
@@ -11,7 +11,7 @@ import (
 func BuildIndex(filename string) (*rtreego.Rtree, error) {
 	r, err := zip.OpenReader(filename)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("error opening %s fo reading: %v", filename, err)
 	}
 	defer r.Close()
 	rt := rtreego.NewTree(2, 25, 50)
@@ -21,12 +21,12 @@ func BuildIndex(filename string) (*rtreego.Rtree, error) {
 		}
 		rc, err := f.Open()
 		if err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("erorr opening %s: %v", filename, err)
 		}
-		defer rc.Close()
 		s, err := NewScanner(rc)
 		if err != nil {
-			log.Fatalf("Error reading %s: %v", f.Name, err)
+			rc.Close()
+			return nil, fmt.Errorf("error reading %s: %v", f.Name, err)
 		}
 		for s.Scan() {
 			r := s.Record()
@@ -35,8 +35,10 @@ func BuildIndex(filename string) (*rtreego.Rtree, error) {
 			}
 		}
 		if err = s.Err(); err != nil {
-			log.Fatalf("Error parsing %s: %v", f.Name, err)
+			rc.Close()
+			return nil, fmt.Errorf("error parsing %s: %v", f.Name, err)
 		}
+		rc.Close()
 	}
 	return rt, nil
 }
