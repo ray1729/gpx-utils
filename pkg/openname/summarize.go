@@ -1,8 +1,8 @@
 package openname
 
 import (
+	"io"
 	"math"
-	"os"
 	"strings"
 	"time"
 
@@ -58,11 +58,7 @@ type TrackSummary struct {
 	PointsOfInterest []POI
 }
 
-func (gs *GPXSummarizer) SummarizeTrack(filename string) (*TrackSummary, error) {
-	r, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
+func (gs *GPXSummarizer) SummarizeTrack(r io.Reader) (*TrackSummary, error) {
 	g, err := gpx.Read(r)
 	if err != nil {
 		return nil, err

@@ -52,8 +52,12 @@ func summarizeDirectory(gs *openname.GPXSummarizer, dirName string) error {
 			continue
 		}
 		filename := path.Join(dirName, f.Name())
+		r, err := os.Open(filename)
+		if err != nil {
+			return fmt.Errorf("error opening %s for reading: %v", filename, err)
+		}
 		log.Printf("Analyzing %s", filename)
-		summary, err := gs.SummarizeTrack(filename)
+		summary, err := gs.SummarizeTrack(r)
 		if err != nil {
 			return fmt.Errorf("error creating summary of GPX track %s: %v", filename, err)
 		}
@@ -75,7 +79,11 @@ func summarizeDirectory(gs *openname.GPXSummarizer, dirName string) error {
 }
 
 func summarizeSingleFile(gs *openname.GPXSummarizer, filename string) error {
-	summary, err := gs.SummarizeTrack(filename)
+	r, err := os.Open(filename)
+	if err != nil {
+		return fmt.Errorf("error opening %s for reading: %v", filename, err)
+	}
+	summary, err := gs.SummarizeTrack(r)
 	if err != nil {
 		return fmt.Errorf("error creating summary of GPX track %s: %v", filename, err)
 	}
