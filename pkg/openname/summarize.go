@@ -19,9 +19,7 @@ type GPXSummarizer struct {
 func NewGPXSummarizer(rt *rtreego.Rtree) (*GPXSummarizer, error) {
 	trans, err := osgb.NewOSTN15Transformer()
 	if err != nil {
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 	return &GPXSummarizer{rt: rt, trans: trans}, nil
 }
