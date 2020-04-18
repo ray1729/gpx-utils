@@ -10,25 +10,17 @@ import (
 	"os"
 	"path"
 
-	"github.com/ray1729/gpx-utils/pkg/openname"
+	"github.com/ray1729/gpx-utils/pkg/placenames"
 )
 
 func main() {
-	openNames := flag.String("opname", "", "Path to Ordnance Server Open Names zip archive")
 	gpxFile := flag.String("gpx", "", "Path to GPX file")
 	dirName := flag.String("dir", "", "Directory to scan for GPX files")
 	flag.Parse()
-	if *openNames == "" {
-		log.Fatal("--opname is required")
-	}
 	if (*gpxFile == "" && *dirName == "") || (*gpxFile != "" && *dirName != "") {
 		log.Fatal("exactly one of --dir or --gpx is required")
 	}
-	rt, err := openname.BuildIndex(*openNames)
-	if err != nil {
-		log.Fatal(err)
-	}
-	gs, err := openname.NewGPXSummarizer(rt)
+	gs, err := placenames.NewGPXSummarizer()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,7 +34,7 @@ func main() {
 	}
 }
 
-func summarizeDirectory(gs *openname.GPXSummarizer, dirName string) error {
+func summarizeDirectory(gs *placenames.GPXSummarizer, dirName string) error {
 	files, err := ioutil.ReadDir(dirName)
 	if err != nil {
 		return err
@@ -78,7 +70,7 @@ func summarizeDirectory(gs *openname.GPXSummarizer, dirName string) error {
 	return nil
 }
 
-func summarizeSingleFile(gs *openname.GPXSummarizer, filename string) error {
+func summarizeSingleFile(gs *placenames.GPXSummarizer, filename string) error {
 	r, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("error opening %s for reading: %v", filename, err)
@@ -93,7 +85,7 @@ func summarizeSingleFile(gs *openname.GPXSummarizer, filename string) error {
 	return nil
 }
 
-func writeSummary(s *openname.TrackSummary, w io.Writer) error {
+func writeSummary(s *placenames.TrackSummary, w io.Writer) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "    ")
 	if err := enc.Encode(s); err != nil {

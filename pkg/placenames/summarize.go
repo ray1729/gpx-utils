@@ -1,4 +1,4 @@
-package openname
+package placenames
 
 import (
 	"io"
@@ -16,16 +16,16 @@ type GPXSummarizer struct {
 	trans osgb.CoordinateTransformer
 }
 
-func NewGPXSummarizer(rt *rtreego.Rtree) (*GPXSummarizer, error) {
+func NewGPXSummarizer() (*GPXSummarizer, error) {
 	trans, err := osgb.NewOSTN15Transformer()
 	if err != nil {
 		return nil, err
 	}
-	return &GPXSummarizer{rt: rt, trans: trans}, nil
-}
-
-func insideLoc(p rtreego.Point, loc *Record) bool {
-	return p[0] >= loc.MbrXMin && p[0] <= loc.MbrXMax && p[1] >= loc.MbrYMin && p[1] <= loc.MbrYMax
+	rt, err := RestoreIndex()
+	if err != nil {
+		return nil, err
+	}
+	return &GPXSummarizer{rt, trans}, nil
 }
 
 func distance(p1, p2 rtreego.Point) float64 {
@@ -87,7 +87,7 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader) (*TrackSummary, error) {
 				}
 				thisPoint := rtreego.Point{ngCoord.Easting, ngCoord.Northing}
 				thisHeight := ngCoord.Height
-				nn, _ := gs.rt.NearestNeighbor(thisPoint).(*Record)
+				nn, _ := gs.rt.NearestNeighbor(thisPoint).(*NamedBoundary)
 				if init {
 					s.Start = nn.Name
 					prevPlace = nn.Name
@@ -102,7 +102,7 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader) (*TrackSummary, error) {
 				if ascent := thisHeight - prevHeight; ascent > 0 {
 					s.Ascent += ascent
 				}
-				if insideLoc(thisPoint, nn) && nn.Name != prevPlace && distance(thisPoint, prevPlacePoint) > 0.2 {
+				if nn.Contains(thisPoint) && nn.Name != prevPlace && distance(thisPoint, prevPlacePoint) > 0.2 {
 					s.PointsOfInterest = append(s.PointsOfInterest, POI{nn.Name, s.Distance})
 					prevPlace = nn.Name
 					prevPlacePoint = thisPoint

@@ -10,7 +10,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/ray1729/gpx-utils/pkg/openname"
+	"github.com/ray1729/gpx-utils/pkg/placenames"
 )
 
 func main() {
@@ -18,15 +18,7 @@ func main() {
 	if listenAddr == "" {
 		listenAddr = ":8000"
 	}
-	openNames := os.Getenv("OPNAMES")
-	if openNames == "" {
-		log.Fatal("OPNAMES not set")
-	}
-	rt, err := openname.BuildIndex(openNames)
-	if err != nil {
-		log.Fatal(err)
-	}
-	gs, err := openname.NewGPXSummarizer(rt)
+	gs, err := placenames.NewGPXSummarizer()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +27,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(listenAddr, nil))
 }
 
-var gpxSummarizer *openname.GPXSummarizer
+var gpxSummarizer *placenames.GPXSummarizer
 
 func rwgpsHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
