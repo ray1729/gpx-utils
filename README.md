@@ -60,7 +60,7 @@ Contains OS data © Crown copyright and database right 2018
 
 ## MIT License
 
-Copyright (c) 2020 Raymond Miller
+Copyright © 2020 Raymond Miller
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
