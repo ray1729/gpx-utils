@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,20 +13,23 @@ import (
 )
 
 func main() {
-	gpxFile := flag.String("gpx", "", "Path to GPX file")
-	dirName := flag.String("dir", "", "Directory to scan for GPX files")
-	flag.Parse()
-	if (*gpxFile == "" && *dirName == "") || (*gpxFile != "" && *dirName != "") {
-		log.Fatal("exactly one of --dir or --gpx is required")
+	log.SetFlags(0)
+	if len(os.Args) != 2 {
+		log.Fatal("Usage: %s GPX_FILE_OR_DIRECTORY")
+	}
+	inFile := os.Args[1]
+	info, err := os.Stat(inFile)
+	if err != nil {
+		log.Fatal(err)
 	}
 	gs, err := placenames.NewGPXSummarizer()
 	if err != nil {
 		log.Fatal(err)
 	}
-	if *gpxFile != "" {
-		err = summarizeSingleFile(gs, *gpxFile)
+	if info.IsDir() {
+		err = summarizeDirectory(gs, inFile)
 	} else {
-		err = summarizeDirectory(gs, *dirName)
+		err = summarizeSingleFile(gs, inFile)
 	}
 	if err != nil {
 		log.Fatal(err)
