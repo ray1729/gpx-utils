@@ -56,6 +56,10 @@ func (r *Record) Bounds() *rtreego.Rect {
 	return rect
 }
 
+func (r *Record) Area() float64 {
+	return (r.MbrXMax - r.MbrXMin) * (r.MbrYMax - r.MbrYMin)
+}
+
 type Scanner struct {
 	csvReader  *csv.Reader
 	nextRecord *Record

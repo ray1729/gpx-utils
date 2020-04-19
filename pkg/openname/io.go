@@ -2,16 +2,49 @@ package openname
 
 import (
 	"archive/zip"
-	"encoding/gob"
 	"fmt"
-	"os"
+	"math"
 	"strings"
-
-	"github.com/ray1729/gpx-utils/pkg/placenames"
 )
 
+type Handler func(*Record) error
+
+type Filter func(*Record) bool
+
+func (f Filter) Complement() Filter {
+	return func(r *Record) bool {
+		return !f(r)
+	}
+}
+
+func FilterType(t string) Filter {
+	return func(r *Record) bool {
+		return r.Type == t
+	}
+}
+
+func FilterLocalType(t string) Filter {
+	return func(r *Record) bool {
+		return r.LocalType == t
+	}
+}
+
+func FilterWithinRadius(x, y, radius float64) Filter {
+	return func(r *Record) bool {
+		dx := x - r.GeomX
+		dy := y - r.GeomY
+		return math.Sqrt(dx*dx+dy*dy) <= radius
+	}
+}
+
+func FilterAreaGt(a float64) Filter {
+	return func(r *Record) bool {
+		return r.Area() > a
+	}
+}
+
 // ProcessFile reads the compressed OS Open Names data set and calls the handler for each record.
-func ProcessFile(filename string, handler func(*Record) error) error {
+func ProcessFile(filename string, handler Handler, filters ...Filter) error {
 	r, err := zip.OpenReader(filename)
 	if err != nil {
 		return fmt.Errorf("error opening %s for reading: %v", filename, err)
@@ -33,10 +66,11 @@ func ProcessFile(filename string, handler func(*Record) error) error {
 		}
 		for s.Scan() {
 			r := s.Record()
-			if r.Type == "populatedPlace" && r.MbrXMax != r.MbrXMin && r.MbrYMax != r.MbrYMin {
-				if err := handler(r); err != nil {
-					return err
-				}
+			if wanted := applyFilters(r, filters); !wanted {
+				continue
+			}
+			if err := handler(r); err != nil {
+				return err
 			}
 		}
 		if err = s.Err(); err != nil {
@@ -48,22 +82,11 @@ func ProcessFile(filename string, handler func(*Record) error) error {
 	return nil
 }
 
-// Save processes the OS OpenNames zip file and outputs bounded places in gob format.
-func Save(inFile string, outFile string) error {
-	wc, err := os.OpenFile(outFile, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-	if err != nil {
-		return err
+func applyFilters(r *Record, filters []Filter) bool {
+	for _, f := range filters {
+		if !f(r) {
+			return false
+		}
 	}
-	defer wc.Close()
-	enc := gob.NewEncoder(wc)
-	err = ProcessFile(inFile, func(r *Record) error {
-		b := placenames.NamedBoundary{
-			Name: r.Name,
-			Xmin: r.MbrXMin,
-			Ymin: r.MbrYMin,
-			Xmax: r.MbrXMax,
-			Ymax: r.MbrYMax}
-		return enc.Encode(b)
-	})
-	return err
+	return true
 }
