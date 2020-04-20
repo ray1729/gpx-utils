@@ -13,6 +13,7 @@ import (
 
 type NamedBoundary struct {
 	Name string
+	Type string
 	Xmin float64
 	Ymin float64
 	Xmax float64

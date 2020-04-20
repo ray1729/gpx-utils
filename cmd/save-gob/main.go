@@ -25,6 +25,7 @@ func main() {
 		func(r *openname.Record) error {
 			b := placenames.NamedBoundary{
 				Name: r.Name,
+				Type: r.LocalType,
 				Xmin: r.MbrXMin,
 				Ymin: r.MbrYMin,
 				Xmax: r.MbrXMax,

@@ -42,6 +42,7 @@ func distance(p1, p2 rtreego.Point) float64 {
 
 type POI struct {
 	Name     string
+	Type     string
 	Distance float64
 }
 
@@ -94,7 +95,7 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader) (*TrackSummary, error) {
 					prevPlacePoint = thisPoint
 					prevPoint = thisPoint
 					prevHeight = thisHeight
-					s.PointsOfInterest = append(s.PointsOfInterest, POI{nn.Name, 0.0})
+					s.PointsOfInterest = append(s.PointsOfInterest, POI{Name: nn.Name, Type: nn.Type, Distance: 0.0})
 					init = false
 					continue
 				}
@@ -103,7 +104,7 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader) (*TrackSummary, error) {
 					s.Ascent += ascent
 				}
 				if nn.Contains(thisPoint) && nn.Name != prevPlace && distance(thisPoint, prevPlacePoint) > 0.2 {
-					s.PointsOfInterest = append(s.PointsOfInterest, POI{nn.Name, s.Distance})
+					s.PointsOfInterest = append(s.PointsOfInterest, POI{Name: nn.Name, Type: nn.Type, Distance: s.Distance})
 					prevPlace = nn.Name
 					prevPlacePoint = thisPoint
 				}
