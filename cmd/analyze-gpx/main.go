@@ -9,6 +9,9 @@ import (
 	"os"
 	"path"
 
+	"github.com/dhconnelly/rtreego"
+
+	"github.com/ray1729/gpx-utils/pkg/cafes"
 	"github.com/ray1729/gpx-utils/pkg/placenames"
 )
 
@@ -22,21 +25,26 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// TODO add --stops flag to select stops database
+	stopsIndex, err := cafes.FetchCtcCamIndex()
+	if err != nil {
+		log.Fatal(err)
+	}
 	gs, err := placenames.NewGPXSummarizer()
 	if err != nil {
 		log.Fatal(err)
 	}
 	if info.IsDir() {
-		err = summarizeDirectory(gs, inFile)
+		err = summarizeDirectory(gs, stopsIndex, inFile)
 	} else {
-		err = summarizeSingleFile(gs, inFile)
+		err = summarizeSingleFile(gs, stopsIndex, inFile)
 	}
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func summarizeDirectory(gs *placenames.GPXSummarizer, dirName string) error {
+func summarizeDirectory(gs *placenames.GPXSummarizer, stops *rtreego.Rtree, dirName string) error {
 	files, err := ioutil.ReadDir(dirName)
 	if err != nil {
 		return err
@@ -51,7 +59,7 @@ func summarizeDirectory(gs *placenames.GPXSummarizer, dirName string) error {
 			return fmt.Errorf("error opening %s for reading: %v", filename, err)
 		}
 		log.Printf("Analyzing %s", filename)
-		summary, err := gs.SummarizeTrack(r)
+		summary, err := gs.SummarizeTrack(r, stops)
 		if err != nil {
 			return fmt.Errorf("error creating summary of GPX track %s: %v", filename, err)
 		}
@@ -72,12 +80,12 @@ func summarizeDirectory(gs *placenames.GPXSummarizer, dirName string) error {
 	return nil
 }
 
-func summarizeSingleFile(gs *placenames.GPXSummarizer, filename string) error {
+func summarizeSingleFile(gs *placenames.GPXSummarizer, stops *rtreego.Rtree, filename string) error {
 	r, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("error opening %s for reading: %v", filename, err)
 	}
-	summary, err := gs.SummarizeTrack(r)
+	summary, err := gs.SummarizeTrack(r, stops)
 	if err != nil {
 		return fmt.Errorf("error creating summary of GPX track %s: %v", filename, err)
 	}

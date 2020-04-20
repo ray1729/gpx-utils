@@ -9,10 +9,12 @@ import (
 	"github.com/dhconnelly/rtreego"
 	"github.com/fofanov/go-osgb"
 	"github.com/twpayne/go-gpx"
+
+	"github.com/ray1729/gpx-utils/pkg/cafes"
 )
 
 type GPXSummarizer struct {
-	rt    *rtreego.Rtree
+	poi   *rtreego.Rtree
 	trans osgb.CoordinateTransformer
 }
 
@@ -25,7 +27,7 @@ func NewGPXSummarizer() (*GPXSummarizer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &GPXSummarizer{rt, trans}, nil
+	return &GPXSummarizer{poi: rt, trans: trans}, nil
 }
 
 func distance(p1, p2 rtreego.Point) float64 {
@@ -46,6 +48,12 @@ type POI struct {
 	Distance float64
 }
 
+type RefreshmentStop struct {
+	Name     string
+	Url      string
+	Distance float64
+}
+
 type TrackSummary struct {
 	Name             string
 	Time             time.Time
@@ -55,9 +63,10 @@ type TrackSummary struct {
 	Distance         float64
 	Ascent           float64
 	PointsOfInterest []POI
+	RefreshmentStops []RefreshmentStop `json:",omitempty"`
 }
 
-func (gs *GPXSummarizer) SummarizeTrack(r io.Reader) (*TrackSummary, error) {
+func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*TrackSummary, error) {
 	g, err := gpx.Read(r)
 	if err != nil {
 		return nil, err
@@ -76,6 +85,7 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader) (*TrackSummary, error) {
 	var prevPlacePoint rtreego.Point
 	var prevPoint rtreego.Point
 	var prevHeight float64
+	var prevStop *cafes.RefreshmentStop
 
 	init := true
 	for _, trk := range g.Trk {
@@ -88,7 +98,7 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader) (*TrackSummary, error) {
 				}
 				thisPoint := rtreego.Point{ngCoord.Easting, ngCoord.Northing}
 				thisHeight := ngCoord.Height
-				nn, _ := gs.rt.NearestNeighbor(thisPoint).(*NamedBoundary)
+				nn, _ := gs.poi.NearestNeighbor(thisPoint).(*NamedBoundary)
 				if init {
 					s.Start = nn.Name
 					prevPlace = nn.Name
@@ -107,6 +117,17 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader) (*TrackSummary, error) {
 					s.PointsOfInterest = append(s.PointsOfInterest, POI{Name: nn.Name, Type: nn.Type, Distance: s.Distance})
 					prevPlace = nn.Name
 					prevPlacePoint = thisPoint
+				}
+				if stops != nil {
+					stop, ok := stops.NearestNeighbor(thisPoint).(*cafes.RefreshmentStop)
+					if ok && stop.Contains(thisPoint) && (prevStop == nil || stop.Name != prevStop.Name) {
+						s.RefreshmentStops = append(s.RefreshmentStops, RefreshmentStop{
+							Name:     stop.Name,
+							Url:      stop.Url,
+							Distance: s.Distance,
+						})
+						prevStop = stop
+					}
 				}
 				prevPoint = thisPoint
 				prevHeight = thisHeight
