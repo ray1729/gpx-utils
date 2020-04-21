@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,27 +18,32 @@ import (
 
 func main() {
 	log.SetFlags(0)
-	if len(os.Args) != 2 {
-		log.Fatal("Usage: %s GPX_FILE_OR_DIRECTORY")
+	stopNames := flag.String("stops", "", "Source for refreshment stops")
+	flag.Parse()
+	if flag.NArg() != 1 {
+		log.Fatal("Usage: %s [--stops=ctccambridge|cyclingmaps] GPX_FILE_OR_DIRECTORY")
 	}
-	inFile := os.Args[1]
+	inFile := flag.Arg(0)
 	info, err := os.Stat(inFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// TODO add --stops flag to select stops database
-	stopsIndex, err := cafes.FetchCtcCamIndex()
-	if err != nil {
-		log.Fatal(err)
+	var stops *rtreego.Rtree
+	if *stopNames != "" {
+		var err error
+		stops, err = cafes.New().Get(*stopNames)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	gs, err := placenames.NewGPXSummarizer()
 	if err != nil {
 		log.Fatal(err)
 	}
 	if info.IsDir() {
-		err = summarizeDirectory(gs, stopsIndex, inFile)
+		err = summarizeDirectory(gs, stops, inFile)
 	} else {
-		err = summarizeSingleFile(gs, stopsIndex, inFile)
+		err = summarizeSingleFile(gs, stops, inFile)
 	}
 	if err != nil {
 		log.Fatal(err)

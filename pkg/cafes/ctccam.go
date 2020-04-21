@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/dhconnelly/rtreego"
@@ -21,31 +22,6 @@ type Waypoint struct {
 
 type Waypoints struct {
 	Waypoints []Waypoint `xml:"wpt"`
-}
-
-type RefreshmentStop struct {
-	Name     string
-	Url      string
-	Easting  float64
-	Northing float64
-}
-
-func (s *RefreshmentStop) Bounds() *rtreego.Rect {
-	p := rtreego.Point{s.Easting, s.Northing}
-	return p.ToRect(100)
-}
-
-func (s *RefreshmentStop) Contains(p rtreego.Point) bool {
-	if len(p) != 2 {
-		panic("Expected a 2-dimensional point")
-	}
-	bounds := s.Bounds()
-	for i := 0; i < 2; i++ {
-		if p[i] < bounds.PointCoord(i) || p[i] > bounds.PointCoord(i)+bounds.LengthsCoord(i) {
-			return false
-		}
-	}
-	return true
 }
 
 func BuildCtcCamIndex(r io.Reader) (*rtreego.Rtree, error) {
@@ -77,6 +53,7 @@ func BuildCtcCamIndex(r io.Reader) (*rtreego.Rtree, error) {
 }
 
 func FetchCtcCamIndex() (*rtreego.Rtree, error) {
+	log.Printf("Fetching %s", ctcCamWaypointsUrl)
 	res, err := http.Get(ctcCamWaypointsUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error getting %s: %v", ctcCamWaypointsUrl, err)
@@ -89,5 +66,6 @@ func FetchCtcCamIndex() (*rtreego.Rtree, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error building CTC Cambridge stops index: %v", err)
 	}
+	log.Printf("Loaded %d CTC Cambridge stops", index.Size())
 	return index, nil
 }

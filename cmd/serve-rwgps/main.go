@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -26,33 +27,13 @@ func main() {
 		log.Fatal(err)
 	}
 	gpxSummarizer = gs
-	if err = loadStops(); err != nil {
-		log.Fatal(err)
-	}
 	http.HandleFunc("/rwgps", rwgpsHandler)
 	log.Printf("Listening for requests on %s", listenAddr)
 	log.Fatal(http.ListenAndServe(listenAddr, nil))
 }
 
-func loadStops() error {
-	var err error
-	log.Println("Fetching CTC Cambridge cafe stops")
-	stops["ctccam"], err = cafes.FetchCtcCamIndex()
-	if err != nil {
-		return err
-	}
-	log.Printf("Loaded %d ctccam stops", stops["ctccam"].Size())
-	log.Println("Fetching cyclingmaps.net cafe stops")
-	stops["cyclingmapsnet"], err = cafes.FetchCyclingMapsIndex()
-	if err != nil {
-		return err
-	}
-	log.Printf("Loaded %d cyclingmapsnet stops", stops["cyclingmapsnet"].Size())
-	return nil
-}
-
 var gpxSummarizer *placenames.GPXSummarizer
-var stops = make(map[string]*rtreego.Rtree)
+var stops = cafes.New()
 
 func rwgpsHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
@@ -72,10 +53,15 @@ func rwgpsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var stopsIndex *rtreego.Rtree
 	if stopsName != "" {
-		stopsIndex = stops[stopsName]
-		if stopsIndex == nil {
-			log.Printf("Invalid stops: %s", stopsName)
-			http.Error(w, fmt.Sprintf("Invalid stops: %s", stopsName), http.StatusBadRequest)
+		var err error
+		stopsIndex, err = stops.Get(stopsName)
+		if err != nil {
+			log.Println(err)
+			if errors.Is(err, cafes.ErrInvalidStops) {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 			return
 		}
 	}

@@ -54,6 +54,7 @@ func BuildCyclingMapsIndex(r io.Reader) (*rtreego.Rtree, error) {
 }
 
 func FetchCyclingMapsIndex() (*rtreego.Rtree, error) {
+	log.Printf("Fetching %s", cyclingMapsCafesUrl)
 	res, err := http.Get(cyclingMapsCafesUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error getting %s: %v", cyclingMapsCafesUrl, err)
@@ -66,5 +67,6 @@ func FetchCyclingMapsIndex() (*rtreego.Rtree, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error building cyclingmaps.net cafe stops index: %v", err)
 	}
+	log.Printf("Loaded %d cyclingmaps.net stops", index.Size())
 	return index, nil
 }
