@@ -35,7 +35,7 @@ func (s *RefreshmentStop) Contains(p rtreego.Point) bool {
 }
 
 // TTL cache based on "9.7 Example: Concurrent Non-Blocking Cache" from
-// "The Go Programming Language", Alan A. A. Dovovan and Brian W. Kernighan
+// "The Go Programming Language", Alan A. A. Donovan and Brian W. Kernighan
 
 type result struct {
 	value *rtreego.Rtree
