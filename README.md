@@ -54,6 +54,16 @@ Then to query a route:
 
     curl http://localhost:3000/rwgps?routeId=30165378  
 
+To include CTC Cambridge refreshment stops in the output:
+
+    curl 'http://localhost:8000/rwgps?routeId=29766778&stops=ctccambridge'
+    
+See https://ctccambridge.org.uk/waypoints for information about this data source.
+
+For stops farther afield, you can try the stops maintained by https://cafes.cyclingmaps.net/
+
+    curl 'http://localhost:8000/rwgps?routeId=29766778&stops=cyclingmaps'
+
 ## Attribution
 
 Contains OS data © Crown copyright and database right 2018
