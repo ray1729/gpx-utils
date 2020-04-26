@@ -56,6 +56,7 @@ type RefreshmentStop struct {
 
 type TrackSummary struct {
 	Name             string
+	Direction        string
 	Time             time.Time
 	Link             string
 	Start            string
@@ -86,6 +87,8 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 	var prevPoint rtreego.Point
 	var prevHeight float64
 	var prevStop *cafes.RefreshmentStop
+	var start rtreego.Point
+	var dN, dE float64
 
 	init := true
 	for _, trk := range g.Trk {
@@ -100,6 +103,7 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 				thisHeight := ngCoord.Height
 				nn, _ := gs.poi.NearestNeighbor(thisPoint).(*NamedBoundary)
 				if init {
+					start = thisPoint
 					s.Start = nn.Name
 					prevPlace = nn.Name
 					prevPlacePoint = thisPoint
@@ -113,6 +117,8 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 				if ascent := thisHeight - prevHeight; ascent > 0 {
 					s.Ascent += ascent
 				}
+				dE += thisPoint[0] - start[0]
+				dN += thisPoint[1] - start[1]
 				if nn.Contains(thisPoint) && nn.Name != prevPlace && distance(thisPoint, prevPlacePoint) > 0.2 {
 					s.PointsOfInterest = append(s.PointsOfInterest, POI{Name: nn.Name, Type: nn.Type, Distance: s.Distance})
 					prevPlace = nn.Name
@@ -135,5 +141,44 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 		}
 	}
 	s.Finish = prevPlace
+	s.Direction = ComputeDirection(dE, dN)
 	return &s, nil
+}
+
+func ComputeDirection(dE, dN float64) string {
+	if dN == 0 {
+		if dE >= 0 {
+			return "east"
+		}
+		return "west"
+	}
+	t := math.Abs(dE) / math.Abs(dN)
+	if dN > 0 {
+		if t < math.Tan(math.Pi/8) {
+			return "north"
+		}
+		if t < math.Tan(3*math.Pi/8) {
+			if dE > 0 {
+				return "north-east"
+			}
+			return "north-west"
+		}
+		if dE > 0 {
+			return "east"
+		}
+		return "west"
+	}
+	if t < math.Tan(math.Pi/8) {
+		return "south"
+	}
+	if t < math.Tan(3*math.Pi/8) {
+		if dE > 0 {
+			return "south-east"
+		}
+		return "south-west"
+	}
+	if dE > 0 {
+		return "east"
+	}
+	return "west"
 }
