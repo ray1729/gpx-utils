@@ -73,6 +73,22 @@ func condenseMinDist(xs []placenames.POI, minDist float64) []placenames.POI {
 					cont = true
 					break
 				}
+				if i == len(xs)-2 || p1 < p2 {
+					xs = deleteElement(xs, i)
+					cont = true
+					break
+				}
+				d1 := xs[i].Distance - xs[i-1].Distance
+				d2 := xs[i+1].Distance - xs[i].Distance
+				if d1 < d2 {
+					xs = deleteElement(xs, i)
+					cont = true
+					break
+				} else {
+					xs = deleteElement(xs, i+1)
+					cont = true
+					break
+				}
 			}
 		}
 	}
