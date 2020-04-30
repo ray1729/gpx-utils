@@ -131,5 +131,5 @@ func condenseMaxPoi(xs []placenames.POI, maxPoi int) []placenames.POI {
 
 func deleteElement(xs []placenames.POI, i int) []placenames.POI {
 	log.Printf("Deleting %s (%0.1f)", xs[i].Name, xs[i].Distance)
-	return append(xs[0:i], xs[i+1:]...)
+	return append(xs[:i], xs[i+1:]...)
 }
