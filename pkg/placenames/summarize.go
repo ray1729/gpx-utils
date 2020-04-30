@@ -63,6 +63,7 @@ type TrackSummary struct {
 	Finish           string
 	Distance         float64
 	Ascent           float64
+	Descent          float64
 	PointsOfInterest []POI
 	RefreshmentStops []RefreshmentStop `json:",omitempty"`
 }
@@ -82,10 +83,10 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 		}
 	}
 
+	var elevations []float64
 	var prevPlace string
 	var prevPlacePoint rtreego.Point
 	var prevPoint rtreego.Point
-	var prevHeight float64
 	var prevStop *cafes.RefreshmentStop
 	var start rtreego.Point
 	var dN, dE float64
@@ -99,8 +100,8 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 				if err != nil {
 					return nil, err
 				}
+				elevations = append(elevations, p.Ele)
 				thisPoint := rtreego.Point{ngCoord.Easting, ngCoord.Northing}
-				thisHeight := ngCoord.Height
 				nn, _ := gs.poi.NearestNeighbor(thisPoint).(*NamedBoundary)
 				if init {
 					start = thisPoint
@@ -108,15 +109,11 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 					prevPlace = nn.Name
 					prevPlacePoint = thisPoint
 					prevPoint = thisPoint
-					prevHeight = thisHeight
 					s.PointsOfInterest = append(s.PointsOfInterest, POI{Name: nn.Name, Type: nn.Type, Distance: 0.0})
 					init = false
 					continue
 				}
 				s.Distance += distance(thisPoint, prevPoint)
-				if ascent := thisHeight - prevHeight; ascent > 0 {
-					s.Ascent += ascent
-				}
 				dE += thisPoint[0] - start[0]
 				dN += thisPoint[1] - start[1]
 				if nn.Contains(thisPoint) && nn.Name != prevPlace && distance(thisPoint, prevPlacePoint) > 0.2 {
@@ -136,16 +133,16 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 					}
 				}
 				prevPoint = thisPoint
-				prevHeight = thisHeight
 			}
 		}
 	}
 	s.Finish = prevPlace
-	s.Direction = ComputeDirection(dE, dN)
+	s.Direction = calcDirection(dE, dN)
+	s.Ascent, s.Descent = calcUphillDownhill(elevations)
 	return &s, nil
 }
 
-func ComputeDirection(dE, dN float64) string {
+func calcDirection(dE, dN float64) string {
 	if dN == 0 {
 		if dE >= 0 {
 			return "east"
@@ -181,4 +178,41 @@ func ComputeDirection(dE, dN float64) string {
 		return "east"
 	}
 	return "west"
+}
+
+// calcUphillDownhill calculates uphill/downhill data
+// Implementation from https://github.com/ptrv/go-gpx
+func calcUphillDownhill(elevations []float64) (float64, float64) {
+	elevsLen := len(elevations)
+	if elevsLen == 0 {
+		return 0.0, 0.0
+	}
+
+	smoothElevations := make([]float64, elevsLen)
+
+	for i, elev := range elevations {
+		var currEle float64
+		if 0 < i && i < elevsLen-1 {
+			prevEle := elevations[i-1]
+			nextEle := elevations[i+1]
+			currEle = prevEle*0.3 + elev*0.4 + nextEle*0.3
+		} else {
+			currEle = elev
+		}
+		smoothElevations[i] = currEle
+	}
+
+	var uphill float64
+	var downhill float64
+
+	for i := 1; i < len(smoothElevations); i++ {
+		d := smoothElevations[i] - smoothElevations[i-1]
+		if d > 0.0 {
+			uphill += d
+		} else {
+			downhill -= d
+		}
+	}
+
+	return uphill, downhill
 }
