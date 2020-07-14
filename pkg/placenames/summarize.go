@@ -13,9 +13,19 @@ import (
 	"github.com/ray1729/gpx-utils/pkg/cafes"
 )
 
+var populatedPlaceRank = map[string]int{
+	"City":             5,
+	"Town":             4,
+	"Village":          3,
+	"Hamlet":           3,
+	"Other Settlement": 1,
+}
+
 type GPXSummarizer struct {
-	poi   *rtreego.Rtree
-	trans osgb.CoordinateTransformer
+	poi               *rtreego.Rtree
+	trans             osgb.CoordinateTransformer
+	minDist           float64
+	minSettlementRank int
 }
 
 func NewGPXSummarizer() (*GPXSummarizer, error) {
@@ -27,7 +37,15 @@ func NewGPXSummarizer() (*GPXSummarizer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &GPXSummarizer{poi: rt, trans: trans}, nil
+	return &GPXSummarizer{poi: rt, trans: trans, minDist: 0.2, minSettlementRank: 1}, nil
+}
+
+func (gs *GPXSummarizer) SetMinSettlement(t string) {
+	gs.minSettlementRank = populatedPlaceRank[t]
+}
+
+func (gs *GPXSummarizer) SetMinDistance(d float64) {
+	gs.minDist = d
 }
 
 func distance(p1, p2 rtreego.Point) float64 {
@@ -116,7 +134,10 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 				s.Distance += distance(thisPoint, prevPoint)
 				dE += thisPoint[0] - start[0]
 				dN += thisPoint[1] - start[1]
-				if nn.Contains(thisPoint) && nn.Name != prevPlace && distance(thisPoint, prevPlacePoint) > 0.2 {
+				if nn.Contains(thisPoint) &&
+					nn.Name != prevPlace &&
+					distance(thisPoint, prevPlacePoint) > gs.minDist &&
+					populatedPlaceRank[nn.Type] >= gs.minSettlementRank {
 					s.PointsOfInterest = append(s.PointsOfInterest, POI{Name: nn.Name, Type: nn.Type, Distance: s.Distance})
 					prevPlace = nn.Name
 					prevPlacePoint = thisPoint

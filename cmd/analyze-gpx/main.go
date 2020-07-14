@@ -19,9 +19,11 @@ import (
 func main() {
 	log.SetFlags(0)
 	stopNames := flag.String("stops", "", "Source for refreshment stops")
+	minDist := flag.Float64("min-dist", 0.2, "Minimum distance (km) between points of interest")
+	minSettlement := flag.String("min-settlement", "Other Settlement", "Exclude populated places smaller than this (City, Town, Village, Hamlet, Other Settlement)")
 	flag.Parse()
 	if flag.NArg() != 1 {
-		log.Fatal("Usage: %s [--stops=ctccambridge|cyclingmaps] GPX_FILE_OR_DIRECTORY")
+		log.Fatal("Usage: %s [--stops=ctccambridge|cyclingmaps] [--min-dist X] [--min-settlement S] GPX_FILE_OR_DIRECTORY")
 	}
 	inFile := flag.Arg(0)
 	info, err := os.Stat(inFile)
@@ -40,6 +42,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	gs.SetMinDistance(*minDist)
+	gs.SetMinSettlement(*minSettlement)
 	if info.IsDir() {
 		err = summarizeDirectory(gs, stops, inFile)
 	} else {
