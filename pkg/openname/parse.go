@@ -36,7 +36,7 @@ type Record struct {
 	DistrictBoroughUri    string
 	DistrictBoroughType   string
 	CountyUnitary         string
-	ConutyUnitaryUri      string
+	CountyUnitaryUri      string
 	CountyUnitaryType     string
 	Region                string
 	RegionUri             string
@@ -143,7 +143,7 @@ func parseRecord(xs []string) (*Record, error) {
 		DistrictBoroughUri:    xs[22],
 		DistrictBoroughType:   xs[23],
 		CountyUnitary:         xs[24],
-		ConutyUnitaryUri:      xs[25],
+		CountyUnitaryUri:      xs[25],
 		CountyUnitaryType:     xs[26],
 		Region:                xs[27],
 		RegionUri:             xs[28],

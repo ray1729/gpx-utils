@@ -24,12 +24,13 @@ func main() {
 		os.Args[1],
 		func(r *openname.Record) error {
 			b := placenames.NamedBoundary{
-				Name: r.Name,
-				Type: r.LocalType,
-				Xmin: r.MbrXMin,
-				Ymin: r.MbrYMin,
-				Xmax: r.MbrXMax,
-				Ymax: r.MbrYMax}
+				Name:   r.Name,
+				Type:   r.LocalType,
+				County: r.CountyUnitary,
+				Xmin:   r.MbrXMin,
+				Ymin:   r.MbrYMin,
+				Xmax:   r.MbrXMax,
+				Ymax:   r.MbrYMax}
 			return enc.Encode(b)
 		},
 		openname.FilterType("populatedPlace"),

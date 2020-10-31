@@ -84,6 +84,7 @@ type TrackSummary struct {
 	Descent          float64
 	PointsOfInterest []POI
 	RefreshmentStops []RefreshmentStop `json:",omitempty"`
+	Counties         map[string]int
 }
 
 func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*TrackSummary, error) {
@@ -94,6 +95,7 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 	var s TrackSummary
 	s.Name = g.Metadata.Name
 	s.Time = g.Metadata.Time
+	s.Counties = make(map[string]int)
 	for _, l := range g.Metadata.Link {
 		if strings.HasPrefix(l.HREF, "http") {
 			s.Link = l.HREF
@@ -128,19 +130,22 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 					prevPlacePoint = thisPoint
 					prevPoint = thisPoint
 					s.PointsOfInterest = append(s.PointsOfInterest, POI{Name: nn.Name, Type: nn.Type, Distance: 0.0})
+					s.Counties[nn.County]++
 					init = false
 					continue
 				}
 				s.Distance += distance(thisPoint, prevPoint)
 				dE += thisPoint[0] - start[0]
 				dN += thisPoint[1] - start[1]
-				if nn.Contains(thisPoint) &&
-					nn.Name != prevPlace &&
-					distance(thisPoint, prevPlacePoint) > gs.minDist &&
-					populatedPlaceRank[nn.Type] >= gs.minSettlementRank {
-					s.PointsOfInterest = append(s.PointsOfInterest, POI{Name: nn.Name, Type: nn.Type, Distance: s.Distance})
-					prevPlace = nn.Name
-					prevPlacePoint = thisPoint
+				if nn.Contains(thisPoint) {
+					s.Counties[nn.County]++
+					if nn.Name != prevPlace &&
+						distance(thisPoint, prevPlacePoint) > gs.minDist &&
+						populatedPlaceRank[nn.Type] >= gs.minSettlementRank {
+						s.PointsOfInterest = append(s.PointsOfInterest, POI{Name: nn.Name, Type: nn.Type, Distance: s.Distance})
+						prevPlace = nn.Name
+						prevPlacePoint = thisPoint
+					}
 				}
 				if stops != nil {
 					stop, ok := stops.NearestNeighbor(thisPoint).(*cafes.RefreshmentStop)
@@ -160,7 +165,22 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 	s.Finish = prevPlace
 	s.Direction = calcDirection(dE, dN)
 	s.Ascent, s.Descent = calcUphillDownhill(elevations)
+	s.Counties = toPercentages(s.Counties)
 	return &s, nil
+}
+
+func toPercentages(m map[string]int) map[string]int {
+	t := 0
+	for _, v := range m {
+		t += v
+	}
+	for k, v := range m {
+		m[k] = v * 100 / t
+		if m[k] == 0 {
+			delete(m, k)
+		}
+	}
+	return m
 }
 
 func calcDirection(dE, dN float64) string {

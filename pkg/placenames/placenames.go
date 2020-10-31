@@ -12,12 +12,13 @@ import (
 )
 
 type NamedBoundary struct {
-	Name string
-	Type string
-	Xmin float64
-	Ymin float64
-	Xmax float64
-	Ymax float64
+	Name   string
+	Type   string
+	County string
+	Xmin   float64
+	Ymin   float64
+	Xmax   float64
+	Ymax   float64
 }
 
 func (b *NamedBoundary) Bounds() *rtreego.Rect {
