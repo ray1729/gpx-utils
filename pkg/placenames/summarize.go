@@ -1,6 +1,7 @@
 package placenames
 
 import (
+	"fmt"
 	"io"
 	"math"
 	"strings"
@@ -124,6 +125,9 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 				thisPoint := rtreego.Point{ngCoord.Easting, ngCoord.Northing}
 				nn, _ := gs.poi.NearestNeighbor(thisPoint).(*NamedBoundary)
 				if init {
+					if !nn.Contains(thisPoint) {
+						return nil, fmt.Errorf("start point out of range")
+					}
 					start = thisPoint
 					s.Start = nn.Name
 					prevPlace = nn.Name
