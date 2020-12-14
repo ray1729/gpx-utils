@@ -125,7 +125,7 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 				thisPoint := rtreego.Point{ngCoord.Easting, ngCoord.Northing}
 				nn, _ := gs.poi.NearestNeighbor(thisPoint).(*NamedBoundary)
 				if init {
-					if !nn.Contains(thisPoint) {
+					if !nn.NearEnough(thisPoint, 500.0) {
 						return nil, fmt.Errorf("start point out of range")
 					}
 					start = thisPoint

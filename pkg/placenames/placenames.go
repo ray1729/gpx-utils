@@ -29,6 +29,16 @@ func (b *NamedBoundary) Bounds() *rtreego.Rect {
 	return r
 }
 
+func (b *NamedBoundary) NearEnough(p rtreego.Point, margin float64) bool {
+	if len(p) != 2 {
+		panic("Expected a 2-dimensional point")
+	}
+	return p[0] >= b.Xmin-margin &&
+		p[0] <= b.Xmax+margin &&
+		p[1] >= b.Ymin-margin &&
+		p[1] <= b.Ymax+margin
+}
+
 func (b *NamedBoundary) Contains(p rtreego.Point) bool {
 	if len(p) != 2 {
 		panic("Expected a 2-dimensional point")
