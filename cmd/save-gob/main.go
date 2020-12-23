@@ -26,7 +26,7 @@ func main() {
 			b := placenames.NamedBoundary{
 				Name:   r.Name,
 				Type:   r.LocalType,
-				County: r.CountyUnitary,
+				County: coalesce(r.CountyUnitary, r.DistrictBorough),
 				Xmin:   r.MbrXMin,
 				Ymin:   r.MbrYMin,
 				Xmax:   r.MbrXMax,
@@ -40,4 +40,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func coalesce(xs ...string) string {
+	for _, x := range xs {
+		if len(x) > 0 {
+			return x
+		}
+	}
+	return ""
 }
