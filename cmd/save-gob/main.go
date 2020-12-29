@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/ray1729/gpx-utils/pkg/openname"
 	"github.com/ray1729/gpx-utils/pkg/placenames"
@@ -31,6 +32,13 @@ func main() {
 				Ymin:   r.MbrYMin,
 				Xmax:   r.MbrXMax,
 				Ymax:   r.MbrYMax}
+			// Welsh counties have both the Welsh and English name separated by a dash. Return
+			// just the English name.
+			i := strings.Index(b.County, " - ")
+			if i > 0 {
+				b.County = b.County[i+3:]
+			}
+			//fmt.Println(strings.Join([]string{b.Name, b.Type, b.County}, ","))
 			return enc.Encode(b)
 		},
 		openname.FilterType("populatedPlace"),
