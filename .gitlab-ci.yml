@@ -8,8 +8,8 @@ build-gpx-anomalies:
   before_script:
     - apt-get -qq update && apt-get --yes install zip
   script:
-    - env GOOS=windows go build -o gpx-anomalies ./cmd/gpx-anomalies
-    - zip gpx-anomalies.zip gpx-anomalies
+    - env GOOS=windows go build -o gpx-anomalies.exe ./cmd/gpx-anomalies
+    - zip gpx-anomalies.zip gpx-anomalies.exe
   artifacts:
     paths:
       - gpx-anomalies.zip
