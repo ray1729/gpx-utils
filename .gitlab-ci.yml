@@ -1,0 +1,25 @@
+stages:
+  - build
+  - deploy
+
+build-gpx-anomalies:
+  stage: build
+  image: golang:1.15-buster
+  before_script:
+    - apt-get -qq update && apt-get --yes install zip
+  script:
+    - env GOOS=windows go build -o gpx-anomalies ./cmd/gpx-anomalies
+    - zip gpx-anomalies.zip gpx-anomalies
+  artifacts:
+    paths:
+      - gpx-anomalies.zip
+
+publish-gpx-anomalies:
+  stage: deploy
+  image: curlimages/curl:latest
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file gpx-anomalies.zip "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/gpx-anomalies/latest/gpx-anomalies.zip"'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
