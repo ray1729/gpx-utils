@@ -63,6 +63,7 @@ func main() {
 }
 
 func findDuplicates(points []RoutePoint, fuzz, minDist, maxDist float64) {
+	var lastError *RoutePoint
 	for i := range points {
 		p := points[i]
 		for j := i + 1; j < len(points); j++ {
@@ -72,7 +73,8 @@ func findDuplicates(points []RoutePoint, fuzz, minDist, maxDist float64) {
 			}
 			d := euclideanDistance(p.Coordinate, q.Coordinate)
 			D := q.Distance - p.Distance
-			if d < fuzz && D > minDist && D < maxDist {
+			if d < fuzz && D > minDist && D < maxDist && (lastError == nil || p.Distance-lastError.Distance > 500) {
+				lastError = &p
 				fmt.Printf("Point (%0.f, %0.f) revisited at %0.2f km and %0.2f km\n",
 					p.Coordinate.Easting, p.Coordinate.Northing, p.Distance/1000.0, q.Distance/1000.0)
 			}
