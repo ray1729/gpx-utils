@@ -9,6 +9,9 @@ import (
 	"github.com/dhconnelly/rtreego"
 )
 
+// Size (in metres) of the bounding box around a stop
+const stopRectangleSize = 500
+
 type RefreshmentStop struct {
 	Name     string
 	Url      string
@@ -18,7 +21,7 @@ type RefreshmentStop struct {
 
 func (s *RefreshmentStop) Bounds() *rtreego.Rect {
 	p := rtreego.Point{s.Easting, s.Northing}
-	return p.ToRect(100)
+	return p.ToRect(stopRectangleSize)
 }
 
 func (s *RefreshmentStop) Contains(p rtreego.Point) bool {
