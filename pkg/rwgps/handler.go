@@ -41,7 +41,7 @@ func (h *RWGPSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	routeId, err := strconv.Atoi(rawRouteId)
 	if err != nil {
-		log.Println("Error parsing route id '%s': %v", rawRouteId, err)
+		log.Printf("Error parsing route id '%s': %v", rawRouteId, err)
 		http.Error(w, fmt.Sprintf("Invalid routeId: %s", rawRouteId), http.StatusBadRequest)
 		return
 	}
