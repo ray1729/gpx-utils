@@ -10,7 +10,7 @@ import (
 )
 
 // Size (in metres) of the bounding box around a stop
-const stopRectangleSize = 500
+const stopRectangleSize = 50
 
 type RefreshmentStop struct {
 	Name     string

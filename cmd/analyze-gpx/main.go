@@ -19,8 +19,11 @@ import (
 func main() {
 	log.SetFlags(0)
 	stopNames := flag.String("stops", "", "Source for refreshment stops")
-	minDist := flag.Float64("min-dist", 0.2, "Minimum distance (km) between points of interest")
-	minSettlement := flag.String("min-settlement", "Other Settlement", "Exclude populated places smaller than this (City, Town, Village, Hamlet, Other Settlement)")
+	stopRect := flag.Float64("sr", placenames.DefaultGPXSummarizerConfig.CoffeeStopSearchRectangleSize, "Size (m) of the rectangle we search for coffee stops near the route")
+	stopDupDist := flag.Float64("sdd", placenames.DefaultGPXSummarizerConfig.CoffeeStopDuplicateDistance, "Suppress recurrences of coffee stops within this distance (km)")
+	dupDist := flag.Float64("dd", placenames.DefaultGPXSummarizerConfig.PointOfInterestDuplicateDistance, "Suppress recurrences of points of interest within this distance (km)")
+	minDist := flag.Float64("md", placenames.DefaultGPXSummarizerConfig.PointOfInterestMinimumDistance, "Minimum distance (km) between points of interest")
+	minSettlement := flag.String("ms", "Other Settlement", "Exclude populated places smaller than this (City, Town, Village, Hamlet, Other Settlement)")
 	flag.Parse()
 	if flag.NArg() != 1 {
 		log.Fatal("Usage: %s [--stops=ctccambridge|cyclingmaps] [--min-dist X] [--min-settlement S] GPX_FILE_OR_DIRECTORY")
@@ -38,12 +41,16 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	gs, err := placenames.NewGPXSummarizer()
+	gs, err := placenames.NewGPXSummarizer(
+		placenames.WithMinimumSettlement(*minSettlement),
+		placenames.WithPointOfInterestMinimumDistance(*minDist),
+		placenames.WithPointOfInterestDuplicateDistance(*dupDist),
+		placenames.WithCoffeeStopSearchRectangleSize(*stopRect),
+		placenames.WithCoffeeStopDuplicateDistance(*stopDupDist),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	gs.SetMinDistance(*minDist)
-	gs.SetMinSettlement(*minSettlement)
 	if info.IsDir() {
 		err = summarizeDirectory(gs, stops, inFile)
 	} else {

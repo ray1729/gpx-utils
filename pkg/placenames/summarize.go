@@ -9,9 +9,8 @@ import (
 
 	"github.com/dhconnelly/rtreego"
 	"github.com/fofanov/go-osgb"
-	"github.com/twpayne/go-gpx"
-
 	"github.com/ray1729/gpx-utils/pkg/cafes"
+	"github.com/twpayne/go-gpx"
 )
 
 var populatedPlaceRank = map[string]int{
@@ -22,14 +21,80 @@ var populatedPlaceRank = map[string]int{
 	"Other Settlement": 1,
 }
 
-type GPXSummarizer struct {
-	poi               *rtreego.Rtree
-	trans             osgb.CoordinateTransformer
-	minDist           float64
-	minSettlementRank int
+// GPXSummarizerConfig allows override of defaults used by the search algorithm.
+type GPXSummarizerConfig struct {
+	CoffeeStopSearchRectangleSize    float64
+	CoffeeStopDuplicateDistance      float64
+	PointOfInterestDuplicateDistance float64
+	PointOfInterestMinimumDistance   float64
+	MinimumSettlementRank            int
 }
 
-func NewGPXSummarizer() (*GPXSummarizer, error) {
+var DefaultGPXSummarizerConfig = GPXSummarizerConfig{
+	CoffeeStopSearchRectangleSize:    500.0, // m
+	CoffeeStopDuplicateDistance:      2.0,   // km
+	PointOfInterestDuplicateDistance: 1.0,   // km
+	PointOfInterestMinimumDistance:   0.2,   // km
+	MinimumSettlementRank:            1,     // "Other Settlement"
+}
+
+type Option func(*GPXSummarizerConfig)
+
+// WithCoffeeStopSearchRectangleSize overrides the size (in metres) of the rectangle searched
+// for coffee stops near the route. Default 500m.
+func WithCoffeeStopSearchRectangleSize(d float64) Option {
+	return func(c *GPXSummarizerConfig) {
+		c.CoffeeStopSearchRectangleSize = d
+	}
+}
+
+// WithCoffeeStopDuplicateDistance overrides the distance (in kilometers) we look back along the
+// route when suppressing duplicate coffee stop entries. This should be at least twice the
+// CoffeeStopSearchRectangleSize. Default 2km.
+func WithCoffeeStopDuplicateDistance(d float64) Option {
+	return func(c *GPXSummarizerConfig) {
+		c.CoffeeStopDuplicateDistance = d
+	}
+}
+
+// WithPointOfInterestDuplicateDistance overrides the distance (in km) we look back along
+// the route when suppressing duplicate points of interest.
+func WithPointOfInterestDuplicateDistance(d float64) Option {
+	return func(c *GPXSummarizerConfig) {
+		c.PointOfInterestDuplicateDistance = d
+	}
+}
+
+// WithPointOfInterestMinimumDistance overrides the minimum distance (in km) between points
+// of interest (if two POI appear within this distance, the second one is suppressed). Default
+// 0km (no suppression).
+func WithPointOfInterestMinimumDistance(d float64) Option {
+	return func(c *GPXSummarizerConfig) {
+		c.PointOfInterestMinimumDistance = d
+	}
+}
+
+func WithMinimumSettlement(s string) Option {
+	rank, ok := populatedPlaceRank[s]
+	if !ok {
+		panic(fmt.Sprintf("invalid settlement type: %s", s))
+	}
+	return func(c *GPXSummarizerConfig) {
+		c.MinimumSettlementRank = rank
+	}
+}
+
+type GPXSummarizer struct {
+	poi   *rtreego.Rtree
+	trans osgb.CoordinateTransformer
+	conf  GPXSummarizerConfig
+}
+
+func NewGPXSummarizer(opts ...Option) (*GPXSummarizer, error) {
+	conf := DefaultGPXSummarizerConfig
+	for _, f := range opts {
+		f(&conf)
+	}
 	trans, err := osgb.NewOSTN15Transformer()
 	if err != nil {
 		return nil, err
@@ -38,15 +103,7 @@ func NewGPXSummarizer() (*GPXSummarizer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &GPXSummarizer{poi: rt, trans: trans, minDist: 0.2, minSettlementRank: 1}, nil
-}
-
-func (gs *GPXSummarizer) SetMinSettlement(t string) {
-	gs.minSettlementRank = populatedPlaceRank[t]
-}
-
-func (gs *GPXSummarizer) SetMinDistance(d float64) {
-	gs.minDist = d
+	return &GPXSummarizer{poi: rt, trans: trans, conf: conf}, nil
 }
 
 func distance(p1, p2 rtreego.Point) float64 {
@@ -108,7 +165,6 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 	var prevPlace string
 	var prevPlacePoint rtreego.Point
 	var prevPoint rtreego.Point
-	var prevStop *cafes.RefreshmentStop
 	var start rtreego.Point
 	var dN, dE float64
 
@@ -141,25 +197,44 @@ func (gs *GPXSummarizer) SummarizeTrack(r io.Reader, stops *rtreego.Rtree) (*Tra
 				s.Distance += distance(thisPoint, prevPoint)
 				dE += thisPoint[0] - start[0]
 				dN += thisPoint[1] - start[1]
-				if nn.Contains(thisPoint) {
+				if nn.Contains(thisPoint) && populatedPlaceRank[nn.Type] >= gs.conf.MinimumSettlementRank {
 					s.Counties[nn.County]++
-					if nn.Name != prevPlace &&
-						distance(thisPoint, prevPlacePoint) > gs.minDist &&
-						populatedPlaceRank[nn.Type] >= gs.minSettlementRank {
+					seenRecently := false
+					for i := len(s.PointsOfInterest) - 1; i >= 0; i-- {
+						if i < len(s.PointsOfInterest)-1 && s.Distance-s.PointsOfInterest[i].Distance > gs.conf.PointOfInterestDuplicateDistance {
+							break
+						}
+						if nn.Name == s.PointsOfInterest[i].Name {
+							seenRecently = true
+							break
+						}
+					}
+					if !seenRecently && distance(thisPoint, prevPlacePoint) > gs.conf.PointOfInterestMinimumDistance {
 						s.PointsOfInterest = append(s.PointsOfInterest, POI{Name: nn.Name, Type: nn.Type, Distance: s.Distance})
 						prevPlace = nn.Name
 						prevPlacePoint = thisPoint
 					}
 				}
 				if stops != nil {
-					stop, ok := stops.NearestNeighbor(thisPoint).(*cafes.RefreshmentStop)
-					if ok && stop.Contains(thisPoint) && (prevStop == nil || stop.Name != prevStop.Name) {
-						s.RefreshmentStops = append(s.RefreshmentStops, RefreshmentStop{
-							Name:     stop.Name,
-							Url:      stop.Url,
-							Distance: s.Distance,
-						})
-						prevStop = stop
+					for _, nearbyStop := range stops.SearchIntersect(thisPoint.ToRect(gs.conf.CoffeeStopSearchRectangleSize)) {
+						stop := nearbyStop.(*cafes.RefreshmentStop)
+						seenRecently := false
+						for i := len(s.RefreshmentStops) - 1; i >= 0; i-- {
+							if i < len(s.RefreshmentStops)-1 && s.Distance-s.RefreshmentStops[i].Distance > gs.conf.CoffeeStopDuplicateDistance {
+								break
+							}
+							if s.RefreshmentStops[i].Name == stop.Name {
+								seenRecently = true
+								break
+							}
+						}
+						if !seenRecently {
+							s.RefreshmentStops = append(s.RefreshmentStops, RefreshmentStop{
+								Name:     stop.Name,
+								Url:      stop.Url,
+								Distance: s.Distance,
+							})
+						}
 					}
 				}
 				prevPoint = thisPoint
