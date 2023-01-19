@@ -34,7 +34,7 @@ var DefaultGPXSummarizerConfig = GPXSummarizerConfig{
 	CoffeeStopSearchRectangleSize:    500.0, // m
 	CoffeeStopDuplicateDistance:      2.0,   // km
 	PointOfInterestDuplicateDistance: 1.0,   // km
-	PointOfInterestMinimumDistance:   0.2,   // km
+	PointOfInterestMinimumDistance:   0.0,   // km
 	MinimumSettlementRank:            1,     // "Other Settlement"
 }
 
