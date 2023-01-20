@@ -11,7 +11,7 @@ import (
 	"github.com/fofanov/go-osgb"
 )
 
-const ctcCamWaypointsUrl = "https://ctccambridge.org.uk/ctccambridge-waypoints.gpx"
+const defaultWaypointsUrl = "https://ctccambridge.org.uk/ctccambridge-waypoints.gpx"
 
 type Waypoint struct {
 	Lat  float64 `xml:"lat,attr"`
@@ -40,7 +40,7 @@ func BuildCtcCamIndex(r io.Reader) (*rtreego.Rtree, error) {
 		gpsCoord := osgb.NewETRS89Coord(w.Lon, w.Lat, 0)
 		ngCoord, err := trans.ToNationalGrid(gpsCoord)
 		if err != nil {
-			return nil, fmt.Errorf("Error translating coordinates %v: %v", gpsCoord, err)
+			return nil, fmt.Errorf("error translating coordinates %v: %v", gpsCoord, err)
 		}
 		stops[i] = &RefreshmentStop{
 			Name:     w.Name,
@@ -52,15 +52,31 @@ func BuildCtcCamIndex(r io.Reader) (*rtreego.Rtree, error) {
 	return rtreego.NewTree(2, 25, 50, stops...), nil
 }
 
-func FetchCtcCamIndex() (*rtreego.Rtree, error) {
-	log.Printf("Fetching %s", ctcCamWaypointsUrl)
-	res, err := http.Get(ctcCamWaypointsUrl)
+type config struct {
+	WaypointsUrl string
+}
+
+type Option func(*config)
+
+func WithWaypointsUrl(u string) Option {
+	return func(c *config) {
+		c.WaypointsUrl = u
+	}
+}
+
+func FetchCtcCamIndex(opt ...Option) (*rtreego.Rtree, error) {
+	c := config{WaypointsUrl: defaultWaypointsUrl}
+	for _, f := range opt {
+		f(&c)
+	}
+	log.Printf("Fetching %s", c.WaypointsUrl)
+	res, err := http.Get(c.WaypointsUrl)
 	if err != nil {
-		return nil, fmt.Errorf("error getting %s: %v", ctcCamWaypointsUrl, err)
+		return nil, fmt.Errorf("error getting %s: %v", c.WaypointsUrl, err)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status fetching %s: %s", ctcCamWaypointsUrl, res.Status)
+		return nil, fmt.Errorf("unexpected status fetching %s: %s", c.WaypointsUrl, res.Status)
 	}
 	index, err := BuildCtcCamIndex(res.Body)
 	if err != nil {
