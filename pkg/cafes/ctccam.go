@@ -54,7 +54,12 @@ func BuildCtcCamIndex(r io.Reader) (*rtreego.Rtree, error) {
 
 func FetchCtcCamIndex() (*rtreego.Rtree, error) {
 	log.Printf("Fetching %s", ctcCamWaypointsUrl)
-	res, err := http.Get(ctcCamWaypointsUrl)
+	req, err := http.NewRequest(http.MethodGet, ctcCamWaypointsUrl, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error constructing waypoints request: %v", err)
+	}
+	req.Header.Set("User-Agent", "gpx-utils")
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error getting %s: %v", ctcCamWaypointsUrl, err)
 	}
